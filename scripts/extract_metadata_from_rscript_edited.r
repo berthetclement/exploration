@@ -3,7 +3,7 @@ library(stringr)
 
 count_lines_function <- function(data_lines){
   
-  function_lines = data_lines[substr(data_lines,1,1) != "#" & str_detect(data_lines,"function")]
+  function_lines = data_lines[substr(data_lines,1,1) != "#" & str_detect(data_lines,"function\\(")]
   
   return(length(function_lines))
 }
@@ -57,9 +57,18 @@ extract_perso_pkgs <- function(data_lines){
   return(sort(perso_pkgs_clean))
 }
 
+extract_recursive_perso_pkgs <- function(perso_pkgs_clean, summary_file){
+  main_chemin = "C:/Users/AssilMansouri/Downloads/Antares_Scripts/PPSE/ANALYSE_BP - 2021-07-12/"
+  for (pkg in perso_pkgs_clean){
+    sub_chemin = paste0(main_chemin,pkg)
+    if (file.exists(sub_chemin)){
+      extract_metadata_from_Rscript(sub_chemin,summary_file)
+    }
+  }
+}
 
 
-extract_metadata_from_Rscript <- function(file, summary_file, write_arg = TRUE){
+extract_metadata_from_Rscript <- function(file, summary_file){
   
   con = file(file, "r", blocking = FALSE)
   data_lines = readLines(con)
@@ -73,25 +82,28 @@ extract_metadata_from_Rscript <- function(file, summary_file, write_arg = TRUE){
  
   nb_lines = length(data_lines)
   nb_lines_significant = nb_lines - nb_lines_non_significant
+                  
+  cat(paste(  file
+            , paste(pkgs_clean, collapse = "\n")
+            , paste(perso_pkgs_clean, collapse = "\n")
+            , nb_lines
+            , nb_lines_significant
+            , nb_lines_function
+            , sep = "\n"
+            )
+      , file = summary_file
+      , sep = "\n"
+      , append = TRUE
+    )
   
-  if (write_arg == TRUE){              
-      cat(paste(  file
-                , paste(pkgs_clean, collapse = "\n")
-                , paste(perso_pkgs_clean, collapse = "\n")
-                , nb_lines
-                , nb_lines_significant
-                , nb_lines_function
-                , sep = "\n"
-                )
-          , file = summary_file
-          , sep = "\n"
-          , append = TRUE
-        )
-  }
+  if (perso_pkgs_clean != "") {extract_recursive_perso_pkgs(perso_pkgs_clean, summary_file)}
 }
 
 run_single <- function(chemin){
-  summary_file = paste(getwd(),"synthese.txt",sep = "/")
+  name = strsplit(chemin,split = "/")[[1]]
+  name = name[length(name)]
+  name = paste(name,"synthese.txt",sep="_")
+  summary_file = paste(getwd(),name,sep = "/")
   print(summary_file)
   extract_metadata_from_Rscript(chemin,summary_file)
 }
@@ -117,5 +129,4 @@ run_all <- function(dir){
 #run_all("D:/Users/mansouriass/Documents/Scripts Antares/PPSE/ANALYSE_BP - 2021-07-12/SCRIPTS")
 #run_all("D:/Users/mansouriass/Downloads")
 
-#run_single("D:/Users/mansouriass/Documents/Scripts Antares/PPSE/ANALYSE_BP - 2021-07-12/SCRIPTS/BP50_main.R")
 run_single("C:/Users/AssilMansouri/Downloads/Antares_Scripts/PPSE/ANALYSE_BP - 2021-07-12/SCRIPTS/BP50_main.R")
